@@ -41,6 +41,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN PV */
 
@@ -49,12 +50,18 @@ volatile uint32_t btn2_irq_cnt;
 volatile uint32_t btn3_irq_cnt;
 volatile uint32_t btn4_irq_cnt;
 
+uint32_t tempos[] = { 10, 50, 100, 500, 1000 };
+size_t tempo_sz = sizeof(tempos) / sizeof(uint32_t);
+
+int tempo_selected = 2;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -103,7 +110,11 @@ void state_start(void){
 
 void state_chaser(void){
 	if(execution_state == NOT_EXECUTED){
-
+		if (htim6.State == HAL_TIM_STATE_READY) {
+				if (HAL_TIM_Base_Start_IT(&htim6) != HAL_OK) {
+					Error_Handler();
+				}
+			}
 	}
 }
 
@@ -186,19 +197,50 @@ void fsm_project(void){
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+	//Set the debounce time to 100ms
+	const uint32_t t_debounce = 100;
+
 	if (GPIO_Pin == BTN1_Pin){
-		btn1_irq_cnt++;
+		static uint32_t t_ref_debounce_btn1 = 0;
+		if ((HAL_GetTick() - t_ref_debounce_btn1) >= t_debounce){
+			t_ref_debounce_btn1 = HAL_GetTick();
+			btn1_irq_cnt++;
+		}
 	}
 	else if (GPIO_Pin == BTN2_Pin){
-		btn2_irq_cnt++;
+		static uint32_t t_ref_debounce_btn2 = 0;
+		if ((HAL_GetTick() - t_ref_debounce_btn2) >= t_debounce){
+			t_ref_debounce_btn2 = HAL_GetTick();
+			btn2_irq_cnt++;
+		}
 	}
 	else if (GPIO_Pin == BTN3_Pin){
-		btn3_irq_cnt++;
+		static uint32_t t_ref_debounce_btn3 = 0;
+		if ((HAL_GetTick() - t_ref_debounce_btn3) >= t_debounce){
+			t_ref_debounce_btn3 = HAL_GetTick();
+			btn3_irq_cnt++;
+		}
 	}
 	else if (GPIO_Pin == BTN4_Pin){
-		btn4_irq_cnt++;
+		static uint32_t t_ref_debounce_btn4 = 0;
+		if ((HAL_GetTick() - t_ref_debounce_btn4) >= t_debounce){
+			t_ref_debounce_btn4 = HAL_GetTick();
+			btn4_irq_cnt++;
+		}
 	}
 }
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+
+	if(htim == &htim6){
+		if(execute_chaser() != CHASER_OK){
+			Error_Handler();
+		}
+	}
+
+}
+
+
 
 /* USER CODE END 0 */
 
@@ -210,7 +252,35 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	//Definition of the table of available LED of the ISEN32 Board
+	TypeDefLed TabLed[8] = { 0 };
 
+	TabLed[0].Pin = L0_Pin;
+	TabLed[0].Port = L0_GPIO_Port;
+
+	TabLed[1].Pin = L1_Pin;
+	TabLed[1].Port = L1_GPIO_Port;
+
+	TabLed[2].Pin = L2_Pin;
+	TabLed[2].Port = L2_GPIO_Port;
+
+	TabLed[3].Pin = L3_Pin;
+	TabLed[3].Port = L3_GPIO_Port;
+
+	TabLed[4].Pin = L4_Pin;
+	TabLed[4].Port = L4_GPIO_Port;
+
+	TabLed[5].Pin = L5_Pin;
+	TabLed[5].Port = L5_GPIO_Port;
+
+	TabLed[6].Pin = L6_Pin;
+	TabLed[6].Port = L6_GPIO_Port;
+
+	TabLed[7].Pin = L7_Pin;
+	TabLed[7].Port = L7_GPIO_Port;
+
+	//Definition of the size of the table of LED
+	size_t TabLed_sz = sizeof(TabLed) / sizeof(TypeDefLed);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -232,8 +302,13 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM3_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   init_fsm();
+
+  if(init_chaser(TabLed, TabLed_sz) != CHASER_OK){
+	  Error_Handler();
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -245,18 +320,26 @@ int main(void)
 	  if(btn1_irq_cnt){
 		  btn1_irq_cnt--;
 		  target_animation = (target_animation < 3) ? target_animation + 1 : 0;
+		  user_input = USER_INPUT_OK;
 	  }
 	  if(btn2_irq_cnt){
 		  btn2_irq_cnt--;
 		  target_animation = (target_animation > 0) ? target_animation - 1 : 0;
+		  user_input = USER_INPUT_OK;
 	  }
 	  if(btn3_irq_cnt){
 		  btn3_irq_cnt--;
 		  //TO DO
+		  if (current_state == STATE_CHASER){
+			  tempo_selected = increase_tempo_chaser(tempo_selected, htim6, tempos, tempo_sz);
+		  }
 	  }
 	  if(btn4_irq_cnt){
 		  btn4_irq_cnt--;
 		  //TO DO
+		  if (current_state == STATE_CHASER){
+			  tempo_selected = decrease_tempo_chaser(tempo_selected, htim6, tempos);
+		  }
 	  }
     /* USER CODE END WHILE */
 
@@ -354,6 +437,44 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 23999;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 100;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
 
 }
 
