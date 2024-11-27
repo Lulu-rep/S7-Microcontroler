@@ -35,4 +35,6 @@ int decrease_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef _htim6, uint32_
 
 int increase_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef _htim6, uint32_t* _tempos, size_t _tempo_sz);
 
+Chaser_status kill_chaser(TIM_HandleTypeDef* _htim6);
+
 #endif /* CHASER_CHASER_H_ */
