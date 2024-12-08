@@ -45,20 +45,20 @@ Chaser_status execute_chaser(void){
 	return CHASER_OK;
 }
 
-int decrease_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef _htim6, uint32_t* _tempos){
+int decrease_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos){
     if (_tempo_selected > 0) {
         _tempo_selected--;
-        __HAL_TIM_SET_AUTORELOAD(&_htim6, _tempos[_tempo_selected]);
-        __HAL_TIM_SET_COUNTER(&_htim6, 0);
+        __HAL_TIM_SET_AUTORELOAD(_htim6, _tempos[_tempo_selected]);
+        __HAL_TIM_SET_COUNTER(_htim6, 0);
     }
     return _tempo_selected;
 }
 
-int increase_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef _htim6, uint32_t* _tempos, size_t _tempo_sz){
+int increase_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos, size_t _tempo_sz){
     if (_tempo_selected < _tempo_sz - 1) {
         _tempo_selected++;
-        __HAL_TIM_SET_AUTORELOAD(&_htim6, _tempos[_tempo_selected]);
-        __HAL_TIM_SET_COUNTER(&_htim6, 0);
+        __HAL_TIM_SET_AUTORELOAD(_htim6, _tempos[_tempo_selected]);
+        __HAL_TIM_SET_COUNTER(_htim6, 0);
     }
     return _tempo_selected;
 }

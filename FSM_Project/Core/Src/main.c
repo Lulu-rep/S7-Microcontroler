@@ -22,7 +22,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-#include "buzzer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -131,7 +130,7 @@ void state_chaser(void){
 void state_buzzer(void){
 	if(execution_state == NOT_EXECUTED){
 		if (htim3.State == HAL_TIM_STATE_READY){
-			if (execute_buzzer(&htim3, note_selected) == BUZZER_ERROR){
+			if (HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_2) != HAL_OK){
 				Error_Handler();
 			}
 		}
@@ -211,8 +210,8 @@ void fsm_project(void){
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-	//Set the debounce time to 100ms
-	const uint32_t t_debounce = 100;
+	//Set the debounce time to 200ms
+	const uint32_t t_debounce = 200;
 
 	if (GPIO_Pin == BTN1_Pin){
 		static uint32_t t_ref_debounce_btn1 = 0;
@@ -248,6 +247,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 	if(htim == &htim6){
 		if(execute_chaser() != CHASER_OK){
+			Error_Handler();
+		}
+	}
+	if(htim == &htim3){
+		if(execute_buzzer(&htim3, note_selected) != BUZZER_OK){
 			Error_Handler();
 		}
 	}
@@ -383,7 +387,7 @@ int main(void)
 		  btn3_irq_cnt--;
 		  //TO DO
 		  if (current_state == STATE_CHASER){
-			  tempo_selected = increase_tempo_chaser(tempo_selected, htim6, tempos, tempo_sz);
+			  tempo_selected = increase_tempo_chaser(tempo_selected, &htim6, tempos, tempo_sz);
 		  }else if (current_state == STATE_BUZZER){
 			  note_selected = next_note(note_selected, &htim3);
 		  }
@@ -392,7 +396,7 @@ int main(void)
 		  btn4_irq_cnt--;
 		  //TO DO
 		  if (current_state == STATE_CHASER){
-			  tempo_selected = decrease_tempo_chaser(tempo_selected, htim6, tempos);
+			  tempo_selected = decrease_tempo_chaser(tempo_selected, &htim6, tempos);
 		  }else if (current_state == STATE_BUZZER){
 			  note_selected = previous_note(note_selected, &htim3);
 		  }
