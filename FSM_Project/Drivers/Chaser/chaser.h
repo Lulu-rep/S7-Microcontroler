@@ -31,8 +31,10 @@ Chaser_status init_chaser(TypeDefLed* _TabLed, size_t _leds_sz);
 
 Chaser_status execute_chaser(void);
 
-int decrease_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef _htim6, uint32_t* _tempos);
+int decrease_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos);
 
-int increase_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef _htim6, uint32_t* _tempos, size_t _tempo_sz);
+int increase_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos, size_t _tempo_sz);
+
+Chaser_status kill_chaser(TIM_HandleTypeDef* _htim6);
 
 #endif /* CHASER_CHASER_H_ */

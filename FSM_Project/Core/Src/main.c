@@ -50,10 +50,16 @@ volatile uint32_t btn2_irq_cnt;
 volatile uint32_t btn3_irq_cnt;
 volatile uint32_t btn4_irq_cnt;
 
+
+
 uint32_t tempos[] = { 10, 50, 100, 500, 1000 };
 size_t tempo_sz = sizeof(tempos) / sizeof(uint32_t);
 
 int tempo_selected = 2;
+
+int note_selected = 0;
+
+
 
 /* USER CODE END PV */
 
@@ -97,7 +103,10 @@ void (*state_callbacks[5])(void);
 
 void set_new_state(FSM_States_Enum new_state){
 	current_state = new_state;
-	actual_animation = (actual_animation < 3) ? actual_animation + 1 : 0;
+	if(new_state == STATE_CHASER) actual_animation = 0;
+	if(new_state == STATE_BUZZER) actual_animation = 1;
+	if(new_state == STATE_JUKEBOX) actual_animation = 2;
+	if(new_state == STATE_CUSTOM) actual_animation = 3;
 	execution_state = NOT_EXECUTED;
 }
 
@@ -110,17 +119,21 @@ void state_start(void){
 
 void state_chaser(void){
 	if(execution_state == NOT_EXECUTED){
-		if (htim6.State == HAL_TIM_STATE_READY) {
-				if (HAL_TIM_Base_Start_IT(&htim6) != HAL_OK) {
-					Error_Handler();
-				}
+		if (htim6.State == HAL_TIM_STATE_READY){
+			if (HAL_TIM_Base_Start_IT(&htim6) != HAL_OK) {
+				Error_Handler();
 			}
+		}
 	}
 }
 
 void state_buzzer(void){
 	if(execution_state == NOT_EXECUTED){
-
+		if (htim3.State == HAL_TIM_STATE_READY){
+			if (HAL_TIM_PWM_Start_IT(&htim3, TIM_CHANNEL_2) != HAL_OK){
+				Error_Handler();
+			}
+		}
 	}
 }
 
@@ -197,8 +210,8 @@ void fsm_project(void){
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-	//Set the debounce time to 100ms
-	const uint32_t t_debounce = 100;
+	//Set the debounce time to 200ms
+	const uint32_t t_debounce = 200;
 
 	if (GPIO_Pin == BTN1_Pin){
 		static uint32_t t_ref_debounce_btn1 = 0;
@@ -234,6 +247,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 	if(htim == &htim6){
 		if(execute_chaser() != CHASER_OK){
+			Error_Handler();
+		}
+	}
+	if(htim == &htim3){
+		if(execute_buzzer(&htim3, note_selected) != BUZZER_OK){
 			Error_Handler();
 		}
 	}
@@ -281,6 +299,23 @@ int main(void)
 
 	//Definition of the size of the table of LED
 	size_t TabLed_sz = sizeof(TabLed) / sizeof(TypeDefLed);
+
+
+	TypeDef_Note notes[] = {
+			{"C5", 1046.50, 0},
+			{"C#5", 1108.73, 0},
+			{"D5", 1174.66, 0},
+			{"Eb5", 1244.51, 0},
+			{"E5", 1318.51, 0},
+			{"F5", 1396.91, 0},
+			{"F#5", 1479.98, 0},
+			{"G5", 1567.98, 0},
+			{"G#5", 1661.22, 0},
+			{"A5", 1760.00, 0},
+			{"A#5", 1864.66, 0},
+			{"B5", 1975.53, 0}
+	};
+	size_t notes_sz = sizeof(notes) / sizeof(TypeDef_Note);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -309,6 +344,9 @@ int main(void)
   if(init_chaser(TabLed, TabLed_sz) != CHASER_OK){
 	  Error_Handler();
   }
+  if(init_buzzer(notes, notes_sz) != BUZZER_OK){
+	  Error_Handler();
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -321,24 +359,46 @@ int main(void)
 		  btn1_irq_cnt--;
 		  target_animation = (target_animation < 3) ? target_animation + 1 : 0;
 		  user_input = USER_INPUT_OK;
+		  if (current_state == STATE_CHASER){
+			  if (kill_chaser(&htim6) != CHASER_OK){
+				  Error_Handler();
+			  }
+		  }else if (current_state == STATE_BUZZER){
+			  if (kill_buzzer(&htim3) != BUZZER_OK){
+				  Error_Handler();
+			  }
+		  }
 	  }
 	  if(btn2_irq_cnt){
 		  btn2_irq_cnt--;
 		  target_animation = (target_animation > 0) ? target_animation - 1 : 0;
 		  user_input = USER_INPUT_OK;
+		  if (current_state == STATE_CHASER){
+			  if (kill_chaser(&htim6) != CHASER_OK){
+				  Error_Handler();
+			  }
+		  }else if (current_state == STATE_BUZZER){
+			  if (kill_buzzer(&htim3) != BUZZER_OK){
+				  Error_Handler();
+			  }
+		  }
 	  }
 	  if(btn3_irq_cnt){
 		  btn3_irq_cnt--;
 		  //TO DO
 		  if (current_state == STATE_CHASER){
-			  tempo_selected = increase_tempo_chaser(tempo_selected, htim6, tempos, tempo_sz);
+			  tempo_selected = increase_tempo_chaser(tempo_selected, &htim6, tempos, tempo_sz);
+		  }else if (current_state == STATE_BUZZER){
+			  note_selected = next_note(note_selected, &htim3);
 		  }
 	  }
 	  if(btn4_irq_cnt){
 		  btn4_irq_cnt--;
 		  //TO DO
 		  if (current_state == STATE_CHASER){
-			  tempo_selected = decrease_tempo_chaser(tempo_selected, htim6, tempos);
+			  tempo_selected = decrease_tempo_chaser(tempo_selected, &htim6, tempos);
+		  }else if (current_state == STATE_BUZZER){
+			  note_selected = previous_note(note_selected, &htim3);
 		  }
 	  }
     /* USER CODE END WHILE */
@@ -410,9 +470,9 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 23999;
+  htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 999;
+  htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
