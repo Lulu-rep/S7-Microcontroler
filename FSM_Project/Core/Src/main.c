@@ -315,6 +315,12 @@ int main(void)
 			{"A#5", 1864.66, 0},
 			{"B5", 1975.53, 0}
 	};
+
+	char *jukebox_partition[] = { "G5", MUTE, "G5", MUTE, "G5", MUTE, "A5",
+	MUTE, "B5", "B5", "B5", "B5", "A5", "A5", "A5", "A5", "G5", MUTE, "B5",
+	MUTE, "A5", MUTE, "A5", MUTE, "G5", "G5", "G5", "G5", MUTE };
+
+	size_t jukebox_partition_sz = sizeof(jukebox_partition)/ sizeof(char*);
 	size_t notes_sz = sizeof(notes) / sizeof(TypeDef_Note);
   /* USER CODE END 1 */
 
