@@ -52,22 +52,25 @@ Buzzer_status execute_buzzer(TIM_HandleTypeDef * _htim, int _note_selected){
 int next_note(int _note_selected, TIM_HandleTypeDef* _htim){
 	if (_note_selected < notes_sz - 1) {
 		_note_selected++;
+		__HAL_TIM_SET_AUTORELOAD(_htim, pNotes[_note_selected].ARR);
+		__HAL_TIM_SET_COUNTER(_htim, 0);
 	}
-	__HAL_TIM_SET_COMPARE(_htim, TIM_CHANNEL_2, CCRX_200US);
-	__HAL_TIM_SET_AUTORELOAD(_htim, pNotes[_note_selected].ARR);
 	return _note_selected;
 }
 
 int previous_note(int _note_selected, TIM_HandleTypeDef* _htim){
 	if (_note_selected > 0) {
 		_note_selected--;
+		__HAL_TIM_SET_AUTORELOAD(_htim, pNotes[_note_selected].ARR);
+		__HAL_TIM_SET_COUNTER(_htim, 0);
 	}
-	__HAL_TIM_SET_COMPARE(_htim, TIM_CHANNEL_2, CCRX_200US);
-	__HAL_TIM_SET_AUTORELOAD(_htim, pNotes[_note_selected].ARR);
 	return _note_selected;
 }
 
 Buzzer_status kill_buzzer(TIM_HandleTypeDef * _htim){
+
+	__HAL_TIM_SET_AUTORELOAD(_htim, 65535);
+	__HAL_TIM_SET_COUNTER(_htim, 0);
 
 	if(HAL_TIM_PWM_Stop(_htim, TIM_CHANNEL_2) != HAL_OK){
 		return BUZZER_ERROR;

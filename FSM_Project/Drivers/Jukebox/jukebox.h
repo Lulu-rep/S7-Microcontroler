@@ -14,6 +14,8 @@
 #include "stm32l1xx_hal.h"
 #include "config.h"
 #include "string.h"
+#include "stdio.h"
+
 typedef enum {
 	JUKEBOX_OK,
 	JUKEBOX_BUSY,

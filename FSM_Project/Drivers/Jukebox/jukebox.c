@@ -87,6 +87,8 @@ Jukebox_status jukebox_play_note_by_name(TIM_HandleTypeDef *_htim, TypeDef_Note 
 }
 
 Jukebox_status stop_music(TIM_HandleTypeDef* _htim) {
+	__HAL_TIM_SET_AUTORELOAD(_htim, 65535);
+	__HAL_TIM_SET_COUNTER(_htim, 0);
 	if (HAL_TIM_Base_Stop_IT(_htim) != HAL_OK) {
 		return JUKEBOX_ERROR;
 	}
