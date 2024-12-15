@@ -9,7 +9,7 @@
 #define BUZZER_BUZZER_H_
 
 #include "stm32l1xx_hal.h"
-
+#include "config.h"
 #define CCRX_200US 4800UL
 
 
@@ -19,11 +19,6 @@ typedef enum {
 	BUZZER_ERROR,
 }Buzzer_status;
 
-typedef struct{
-	const char *name;
-	double frequency;
-	uint16_t ARR;
-}TypeDef_Note;
 
 
 Buzzer_status init_buzzer(TypeDef_Note* _TabNote, size_t _notes_sz);

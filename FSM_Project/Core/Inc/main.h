@@ -33,11 +33,11 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 #include "chaser.h"
 #include "buzzer.h"
+#include "jukebox.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

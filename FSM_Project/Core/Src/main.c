@@ -55,12 +55,19 @@ volatile uint32_t btn4_irq_cnt;
 uint32_t tempos[] = { 10, 50, 100, 500, 1000 };
 size_t tempo_sz = sizeof(tempos) / sizeof(uint32_t);
 
+uint32_t tempos_jukebox[] = { 10, 50, 100, 150, 200,300 };
+size_t tempo_jukebox_sz = sizeof(tempos_jukebox) / sizeof(uint32_t);
+
 int tempo_selected = 2;
+
+int tempo_jukebox_selected =1;
 
 int note_selected = 0;
 
 
-
+char *jukebox_partition[] = { "G5", MUTE, "G5", MUTE, "G5", MUTE, "A5",
+	MUTE, "B5", "B5", "B5", "B5", "A5", "A5", "A5", "A5", "G5", MUTE, "B5",
+	MUTE, "A5", MUTE, "A5", MUTE, "G5", "G5", "G5", "G5", MUTE };
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -134,11 +141,18 @@ void state_buzzer(void){
 				Error_Handler();
 			}
 		}
+		execute_buzzer(&htim3, note_selected);
 	}
 }
 
 void state_jukebox(void){
 	if(execution_state == NOT_EXECUTED){
+		increase_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox, tempo_jukebox_sz);
+		if (htim3.State == HAL_TIM_STATE_READY && htim6.State == HAL_TIM_STATE_READY){
+            if (start_music(&htim3, &htim6) != JUKEBOX_OK){
+                Error_Handler();
+            }
+        }
 
 	}
 }
@@ -246,9 +260,16 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 	if(htim == &htim6){
-		if(execute_chaser() != CHASER_OK){
-			Error_Handler();
+		if(current_state == STATE_CHASER){
+			if(execute_chaser() != CHASER_OK){
+						Error_Handler();
+					}
 		}
+		else if(current_state == STATE_JUKEBOX){
+		            if(execute_jukebox(jukebox_partition, &htim3) != JUKEBOX_OK){
+		                Error_Handler();
+		            }
+		        }
 	}
 	if(htim == &htim3){
 		if(execute_buzzer(&htim3, note_selected) != BUZZER_OK){
@@ -315,6 +336,9 @@ int main(void)
 			{"A#5", 1864.66, 0},
 			{"B5", 1975.53, 0}
 	};
+
+
+	size_t jukebox_partition_sz = sizeof(jukebox_partition)/ sizeof(char*);
 	size_t notes_sz = sizeof(notes) / sizeof(TypeDef_Note);
   /* USER CODE END 1 */
 
@@ -347,6 +371,9 @@ int main(void)
   if(init_buzzer(notes, notes_sz) != BUZZER_OK){
 	  Error_Handler();
   }
+  if(init_jukebox(notes, notes_sz, jukebox_partition_sz) != JUKEBOX_OK){
+	  Error_Handler();
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -367,11 +394,15 @@ int main(void)
 			  if (kill_buzzer(&htim3) != BUZZER_OK){
 				  Error_Handler();
 			  }
+		  } else if(current_state == STATE_JUKEBOX){
+			  if(stop_music(&htim3) != JUKEBOX_OK){
+				  Error_Handler();
+			  }
 		  }
 	  }
 	  if(btn2_irq_cnt){
 		  btn2_irq_cnt--;
-		  target_animation = (target_animation > 0) ? target_animation - 1 : 0;
+		  target_animation = (target_animation > 0) ? target_animation - 1 : 3;
 		  user_input = USER_INPUT_OK;
 		  if (current_state == STATE_CHASER){
 			  if (kill_chaser(&htim6) != CHASER_OK){
@@ -379,6 +410,10 @@ int main(void)
 			  }
 		  }else if (current_state == STATE_BUZZER){
 			  if (kill_buzzer(&htim3) != BUZZER_OK){
+				  Error_Handler();
+			  }
+		  } else if(current_state == STATE_JUKEBOX){
+			  if(stop_music(&htim3) != JUKEBOX_OK){
 				  Error_Handler();
 			  }
 		  }
@@ -390,6 +425,8 @@ int main(void)
 			  tempo_selected = increase_tempo_chaser(tempo_selected, &htim6, tempos, tempo_sz);
 		  }else if (current_state == STATE_BUZZER){
 			  note_selected = next_note(note_selected, &htim3);
+		  } else if (current_state == STATE_JUKEBOX){
+			  tempo_jukebox_selected = increase_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox, tempo_jukebox_sz);
 		  }
 	  }
 	  if(btn4_irq_cnt){
@@ -399,6 +436,8 @@ int main(void)
 			  tempo_selected = decrease_tempo_chaser(tempo_selected, &htim6, tempos);
 		  }else if (current_state == STATE_BUZZER){
 			  note_selected = previous_note(note_selected, &htim3);
+		  } else if(current_state == STATE_JUKEBOX){
+			  tempo_jukebox_selected = decrease_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox);
 		  }
 	  }
     /* USER CODE END WHILE */
