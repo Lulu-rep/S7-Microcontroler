@@ -149,9 +149,9 @@ void state_buzzer(void){
 
 void state_jukebox(void){
 	if(execution_state == NOT_EXECUTED){
-		//decrease_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox, tempo_jukebox_sz);
+		increase_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox);
 		if (htim3.State == HAL_TIM_STATE_READY && htim6.State == HAL_TIM_STATE_READY){
-            if (start_music(&htim3, &htim6) != JUKEBOX_OK){
+            if (start_jukebox(&htim3, &htim6) != JUKEBOX_OK){
                 Error_Handler();
             }
         }
@@ -429,18 +429,22 @@ int main(void)
 			  if (kill_chaser(&htim6) != CHASER_OK){
 				  Error_Handler();
 			  }
+			  tempo_selected = 2;
 		  }else if (current_state == STATE_BUZZER){
 			  if (kill_buzzer(&htim3) != BUZZER_OK){
 				  Error_Handler();
 			  }
+			  note_selected = 0;
 		  }else if(current_state == STATE_JUKEBOX){
-			  if(stop_music(&htim3) != JUKEBOX_OK){
+			  if(kill_jukebox(&htim3,&htim6) != JUKEBOX_OK){
 				  Error_Handler();
 			  }
+			  tempo_jukebox_selected = 3;
 		  }else if (current_state == STATE_CUSTOM){
 			  if (kill_motor(&htim3) != MOTOR_OK){
 				  Error_Handler();
 			  }
+			  speed_selected = 2;
 		  }
 	  }
 	  if(btn2_irq_cnt){
@@ -451,18 +455,22 @@ int main(void)
 			  if (kill_chaser(&htim6) != CHASER_OK){
 				  Error_Handler();
 			  }
+			  tempo_selected = 2;
 		  }else if (current_state == STATE_BUZZER){
 			  if (kill_buzzer(&htim3) != BUZZER_OK){
 				  Error_Handler();
 			  }
+			  note_selected = 0;
 		  } else if(current_state == STATE_JUKEBOX){
-			  if(stop_music(&htim3) != JUKEBOX_OK){
+			  if(kill_jukebox(&htim3,&htim6) != JUKEBOX_OK){
 				  Error_Handler();
 			  }
+			  tempo_jukebox_selected = 3;
 		  }else if (current_state == STATE_CUSTOM){
 			  if (kill_motor(&htim3) != MOTOR_OK){
 				  Error_Handler();
 			  }
+			  speed_selected = 2;
 		  }
 	  }
 	  if(btn3_irq_cnt){

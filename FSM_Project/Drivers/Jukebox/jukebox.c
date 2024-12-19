@@ -86,19 +86,22 @@ Jukebox_status jukebox_play_note_by_name(TIM_HandleTypeDef *_htim, TypeDef_Note 
 	return JUKEBOX_ERROR;
 }
 
-Jukebox_status stop_music(TIM_HandleTypeDef* _htim) {
-	__HAL_TIM_SET_AUTORELOAD(_htim, 65535);
-	__HAL_TIM_SET_COUNTER(_htim, 0);
-	if (HAL_TIM_Base_Stop_IT(_htim) != HAL_OK) {
+Jukebox_status kill_jukebox(TIM_HandleTypeDef* _htim3,TIM_HandleTypeDef* _htim6) {
+	__HAL_TIM_SET_AUTORELOAD(_htim3, 65535);
+	__HAL_TIM_SET_COUNTER(_htim3, 0);
+
+	__HAL_TIM_SET_AUTORELOAD(_htim6, 100);
+	__HAL_TIM_SET_COUNTER(_htim6, 0);
+	if (HAL_TIM_Base_Stop_IT(_htim3) != HAL_OK) {
 		return JUKEBOX_ERROR;
 	}
-	if (HAL_TIM_PWM_Stop(_htim, TIM_CHANNEL_2) != HAL_OK) {
+	if (HAL_TIM_PWM_Stop(_htim3, TIM_CHANNEL_2) != HAL_OK) {
 		return JUKEBOX_ERROR;
 	}
 	return JUKEBOX_OK;
 }
 
-Jukebox_status start_music(TIM_HandleTypeDef* _htim3,TIM_HandleTypeDef* _htim6) {
+Jukebox_status start_jukebox(TIM_HandleTypeDef* _htim3,TIM_HandleTypeDef* _htim6) {
 	if (TIM_CHANNEL_STATE_GET(_htim3, TIM_CHANNEL_2)
 			== HAL_TIM_CHANNEL_STATE_READY) {
 		if (HAL_TIM_PWM_Start(_htim3, TIM_CHANNEL_2) != HAL_OK) {

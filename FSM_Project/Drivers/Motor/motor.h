@@ -5,8 +5,8 @@
  *      Author: Adrien
  */
 
-#ifndef VERSTAPPEN_VERSTAPPEN_H_
-#define VERSTAPPEN_VERSTAPPEN_H_
+#ifndef MOTOR_MOTOR_H_
+#define MOTOR_MOTOR_H_
 
 #include "stm32l1xx_hal.h"
 
@@ -32,4 +32,4 @@ Motor_status kill_motor(TIM_HandleTypeDef * _htim);
 
 
 
-#endif /* VERSTAPPEN_VERSTAPPEN_H_ */
+#endif /* MOTOR_MOTOR_H_ */
