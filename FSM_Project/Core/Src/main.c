@@ -55,26 +55,20 @@ volatile uint32_t btn4_irq_cnt;
 uint32_t tempos[] = { 10, 50, 100, 500, 1000 };
 size_t tempo_sz = sizeof(tempos) / sizeof(uint32_t);
 
-uint32_t tempos_jukebox[] = { 10, 50, 100, 150, 200,300 };
+uint32_t tempos_jukebox[] = {50, 100, 150, 200,300,350,400 };
 size_t tempo_jukebox_sz = sizeof(tempos_jukebox) / sizeof(uint32_t);
 
 int tempo_selected = 2;
 
-int tempo_jukebox_selected =1;
+int tempo_jukebox_selected =3;
 
 int note_selected = 0;
 
-int speed_selected = 4;
+int speed_selected = 2;
 
 char *jukebox_partition[] = {
 	    "A5", "B5", "C5", "A5", "E5", MUTE, "E5", "D5",MUTE,MUTE,
 	    "A5", "B5", "C5", "A5", "D5", MUTE, "D5", "C5","C5", MUTE,MUTE,MUTE,MUTE
-	};
-
-char *verstappen_partition[] = {
-	    "A5", "A5", MUTE, "A5", "A5", MUTE, "A5", "A5", MUTE, "E5", "E5", "E5",
-		MUTE, MUTE,MUTE,MUTE, "E5", "E5", MUTE,"E5", "E5", MUTE, "C5", "C5", "C5",
-		MUTE, "B4", "B4", "B4" MUTE,MUTE
 	};
 /* USER CODE END PV */
 
@@ -155,7 +149,7 @@ void state_buzzer(void){
 
 void state_jukebox(void){
 	if(execution_state == NOT_EXECUTED){
-		increase_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox, tempo_jukebox_sz);
+		//decrease_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox, tempo_jukebox_sz);
 		if (htim3.State == HAL_TIM_STATE_READY && htim6.State == HAL_TIM_STATE_READY){
             if (start_music(&htim3, &htim6) != JUKEBOX_OK){
                 Error_Handler();
@@ -429,7 +423,7 @@ int main(void)
 
 	  if(btn1_irq_cnt){
 		  btn1_irq_cnt--;
-		  target_animation = (target_animation < 3) ? target_animation + 1 : 0;
+		  target_animation = (target_animation > 0) ? target_animation - 1 : 3;
 		  user_input = USER_INPUT_OK;
 		  if (current_state == STATE_CHASER){
 			  if (kill_chaser(&htim6) != CHASER_OK){
@@ -451,7 +445,7 @@ int main(void)
 	  }
 	  if(btn2_irq_cnt){
 		  btn2_irq_cnt--;
-		  target_animation = (target_animation > 0) ? target_animation - 1 : 3;
+		  target_animation = (target_animation < 3) ? target_animation + 1 : 0;
 		  user_input = USER_INPUT_OK;
 		  if (current_state == STATE_CHASER){
 			  if (kill_chaser(&htim6) != CHASER_OK){
@@ -477,11 +471,11 @@ int main(void)
 		  if (current_state == STATE_CHASER){
 			  tempo_selected = increase_tempo_chaser(tempo_selected, &htim6, tempos, tempo_sz);
 		  }else if (current_state == STATE_BUZZER){
-			  note_selected = next_note(note_selected, &htim3);
+			  note_selected = previous_note(note_selected, &htim3);
 		  }else if (current_state == STATE_JUKEBOX){
-			  tempo_jukebox_selected = increase_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox, tempo_jukebox_sz);
+			  tempo_jukebox_selected = decrease_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox,tempo_jukebox_sz);
 		  }else if (current_state == STATE_CUSTOM){
-			  speed_selected = speed_up(speed_selected, &htim3);
+			  speed_selected = speed_down(speed_selected, &htim3);
 		  }
 	  }
 	  if(btn4_irq_cnt){
@@ -490,11 +484,11 @@ int main(void)
 		  if (current_state == STATE_CHASER){
 			  tempo_selected = decrease_tempo_chaser(tempo_selected, &htim6, tempos);
 		  }else if (current_state == STATE_BUZZER){
-			  note_selected = previous_note(note_selected, &htim3);
+			  note_selected = next_note(note_selected, &htim3);
 		  }else if(current_state == STATE_JUKEBOX){
-			  tempo_jukebox_selected = decrease_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox);
+			  tempo_jukebox_selected = increase_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox);
 		  }else if (current_state == STATE_CUSTOM){
-			  speed_selected = speed_down(speed_selected, &htim3);
+			  speed_selected = speed_up(speed_selected, &htim3);
 		  }
 	  }
     /* USER CODE END WHILE */

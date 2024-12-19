@@ -113,7 +113,7 @@ Jukebox_status start_music(TIM_HandleTypeDef* _htim3,TIM_HandleTypeDef* _htim6) 
 	return JUKEBOX_OK;
 }
 
-int decrease_tempo_jukebox(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos){
+int increase_tempo_jukebox(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos){
     if (_tempo_selected > 0) {
         _tempo_selected--;
         __HAL_TIM_SET_AUTORELOAD(_htim6, _tempos[_tempo_selected]);
@@ -122,7 +122,7 @@ int decrease_tempo_jukebox(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint3
     return _tempo_selected;
 }
 
-int increase_tempo_jukebox(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos, size_t _tempo_sz){
+int decrease_tempo_jukebox(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos, size_t _tempo_sz){
     if (_tempo_selected < _tempo_sz - 1) {
         _tempo_selected++;
         __HAL_TIM_SET_AUTORELOAD(_htim6, _tempos[_tempo_selected]);

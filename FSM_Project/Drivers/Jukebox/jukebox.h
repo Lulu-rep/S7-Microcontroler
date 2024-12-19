@@ -37,7 +37,7 @@ Jukebox_status stop_music(TIM_HandleTypeDef* _htim);
 
 Jukebox_status start_music(TIM_HandleTypeDef* _htim3,TIM_HandleTypeDef* _htim6);
 
-int decrease_tempo_jukebox(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos);
+int increase_tempo_jukebox(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos);
 
-int increase_tempo_jukebox(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos, size_t _tempo_sz);
+int decrease_tempo_jukebox(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos, size_t _tempo_sz);
 #endif /* JUKEBOX_JUKEBOX_H_ */
