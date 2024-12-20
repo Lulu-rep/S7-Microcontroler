@@ -93,6 +93,7 @@ int __io_putchar(int ch){
 	return ch;
 }
 
+//Definition of the enum for the Final State Machine
 typedef enum {
 	STATE_START, STATE_CHASER, STATE_BUZZER, STATE_JUKEBOX, STATE_CUSTOM
 } FSM_States_Enum;
@@ -114,6 +115,10 @@ ExecutionState_Enum execution_state = NOT_EXECUTED;
 
 void (*state_callbacks[5])(void);
 
+/**
+ * @Brief Set the state to the new state given
+ * @param New state to set to current
+ */
 void set_new_state(FSM_States_Enum new_state){
 	current_state = new_state;
 	if(new_state == STATE_CHASER) actual_animation = 0;
@@ -123,6 +128,9 @@ void set_new_state(FSM_States_Enum new_state){
 	execution_state = NOT_EXECUTED;
 }
 
+/**
+ * @Brief Start of the FSM
+ */
 void state_start(void){
 	if(execution_state == NOT_EXECUTED){
 		user_input = USER_INPUT_ERROR;
@@ -130,6 +138,9 @@ void state_start(void){
 	}
 }
 
+/**
+ * @Brief Start the timer when entering chasser state
+ */
 void state_chaser(void){
 	if(execution_state == NOT_EXECUTED){
 		if (htim6.State == HAL_TIM_STATE_READY){
@@ -140,6 +151,9 @@ void state_chaser(void){
 	}
 }
 
+/**
+ * @Brief Start the timer 3 channel 2 and set the tone the default note when entering buzzer state
+ */
 void state_buzzer(void){
 	if(execution_state == NOT_EXECUTED){
 		if (htim3.State == HAL_TIM_STATE_READY){
@@ -151,8 +165,12 @@ void state_buzzer(void){
 	}
 }
 
+/**
+ * @Brief Start the jukebox when entering the Jukebox State
+ */
 void state_jukebox(void){
 	if(execution_state == NOT_EXECUTED){
+		//When starting the tempo is 1 step lower than it should be
 		increase_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox);
 		if (htim3.State == HAL_TIM_STATE_READY && htim6.State == HAL_TIM_STATE_READY){
             if (start_jukebox(&htim3, &htim6) != JUKEBOX_OK){
@@ -163,6 +181,9 @@ void state_jukebox(void){
 	}
 }
 
+/**
+ * @Brief Start the timer 3 when entering the Custom state
+ */
 void state_custom(void){
 	if(execution_state == NOT_EXECUTED){
 		if (htim3.State == HAL_TIM_STATE_READY){
@@ -173,6 +194,9 @@ void state_custom(void){
 	}
 }
 
+/**
+ * @Brief Init all the required variables for the use of the FSM
+ */
 void init_fsm(void){
 	user_input = USER_INPUT_ERROR;
 	actual_animation = 0;
@@ -187,6 +211,9 @@ void init_fsm(void){
 	set_new_state(STATE_START);
 }
 
+/**
+ * @Brief Manage the FSM by changing the state if necessary
+ */
 void fsm_project(void){
 	state_callbacks[current_state]();
 
