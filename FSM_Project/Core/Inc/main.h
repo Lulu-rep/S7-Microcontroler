@@ -34,7 +34,7 @@ extern "C" {
 #include "chaser.h"
 #include "buzzer.h"
 #include "jukebox.h"
-#include "../../Drivers/Motor/motor.h"
+#include "motor.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

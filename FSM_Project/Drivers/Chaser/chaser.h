@@ -13,7 +13,7 @@
 //Number of maximum LED on the board current = 8 LEDs
 #define MAX_LED 8
 
-
+//Enum to define the status of the function relative to this library
 typedef enum {
 	CHASER_OK,
 	CHASER_ERROR,
@@ -26,14 +26,14 @@ typedef struct{
     uint16_t Pin;
 } TypeDefLed;
 
-
+//Function prototype definition
 Chaser_status init_chaser(TypeDefLed* _TabLed, size_t _leds_sz);
 
 Chaser_status execute_chaser(void);
 
-int decrease_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos);
+int increase_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos);
 
-int increase_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos, size_t _tempo_sz);
+int decrease_tempo_chaser(int _tempo_selected, TIM_HandleTypeDef* _htim6, uint32_t* _tempos, size_t _tempo_sz);
 
 Chaser_status kill_chaser(TIM_HandleTypeDef* _htim6);
 

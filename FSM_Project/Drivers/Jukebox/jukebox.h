@@ -8,6 +8,7 @@
 #ifndef JUKEBOX_JUKEBOX_H_
 #define JUKEBOX_JUKEBOX_H_
 
+//Definition of the mute state and the CCRX for the uptime of the buzzer
 #define MUTE "-"
 #define CCRX_200US 4800UL
 
@@ -16,12 +17,14 @@
 #include "string.h"
 #include "stdio.h"
 
+//Enum to define the state of function used in this library
 typedef enum {
 	JUKEBOX_OK,
 	JUKEBOX_BUSY,
 	JUKEBOX_ERROR,
 }Jukebox_status;
 
+//Function prototype definition
 Jukebox_status init_jukebox(TypeDef_Note* _TabNote, size_t _notes_sz, size_t _jukebox_partition_sz);
 
 Jukebox_status execute_jukebox(char* _Jukebox_partition[], TIM_HandleTypeDef* _htim);

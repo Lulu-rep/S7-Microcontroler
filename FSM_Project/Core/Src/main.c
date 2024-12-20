@@ -44,20 +44,21 @@ TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN PV */
-
 volatile uint32_t btn1_irq_cnt;
 volatile uint32_t btn2_irq_cnt;
 volatile uint32_t btn3_irq_cnt;
 volatile uint32_t btn4_irq_cnt;
 
 
-
+//Definition of the table containing the available tempo for the chaser animation
 uint32_t tempos[] = { 10, 50, 100, 500, 1000 };
 size_t tempo_sz = sizeof(tempos) / sizeof(uint32_t);
 
+//Definition of the table containing the available tempo for the jukebox animation
 uint32_t tempos_jukebox[] = {50, 100, 150, 200,300,350,400 };
 size_t tempo_jukebox_sz = sizeof(tempos_jukebox) / sizeof(uint32_t);
 
+//Set the default value for each animation
 int tempo_selected = 2;
 
 int tempo_jukebox_selected =3;
@@ -66,10 +67,13 @@ int note_selected = 0;
 
 int speed_selected = 2;
 
+//Definition of the partition that will be played on the buzzer for the jukebox animation
 char *jukebox_partition[] = {
 	    "A5", "B5", "C5", "A5", "E5", MUTE, "E5", "D5",MUTE,MUTE,
 	    "A5", "B5", "C5", "A5", "D5", MUTE, "D5", "C5","C5", MUTE,MUTE,MUTE,MUTE
 	};
+//Size of the partition
+size_t jukebox_partition_sz = sizeof(jukebox_partition)/ sizeof(char*);
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -229,6 +233,10 @@ void fsm_project(void){
 	}
 }
 
+/**
+ * @Brief Definition of the callback for the button
+ * @param GPIO Pin of the pressed button
+ */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	//Set the debounce time to 200ms
 	const uint32_t t_debounce = 200;
@@ -263,14 +271,21 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	}
 }
 
+/**
+ * @Brief redefinition of the Period Elapsed callback to be customely used
+ * @param Handle of the timer that has finiched to count
+ * @retval none
+ */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 	if(htim == &htim6){
+		//If the timer 6 has finished and the current state is the chaser => execute the chaser animation
 		if(current_state == STATE_CHASER){
 			if(execute_chaser() != CHASER_OK){
 						Error_Handler();
 					}
 		}
+		//Else if the current state if the jukebox => execute the jukebox
 		else if(current_state == STATE_JUKEBOX){
 		            if(execute_jukebox(jukebox_partition, &htim3) != JUKEBOX_OK){
 		                Error_Handler();
@@ -278,6 +293,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		        }
 	}
 	if(htim == &htim3){
+		//If the timer 3 has finished execute the buzzer
 		if(execute_buzzer(&htim3, note_selected) != BUZZER_OK){
 			Error_Handler();
 		}
@@ -327,7 +343,7 @@ int main(void)
 	//Definition of the size of the table of LED
 	size_t TabLed_sz = sizeof(TabLed) / sizeof(TypeDefLed);
 
-
+	//Defnition of the available note that can be played using the buzzer
 	TypeDef_Note notes[] = {
 			{ "F#4", 369.99, 0 },
 			{ "G4", 392.00, 0 },
@@ -363,11 +379,10 @@ int main(void)
 			{ "B6", 1975.53, 0 }
 
 	};
-
-
-	size_t jukebox_partition_sz = sizeof(jukebox_partition)/ sizeof(char*);
+	//Size of the previous tab
 	size_t notes_sz = sizeof(notes) / sizeof(TypeDef_Note);
 
+	//Definition of the table of available speed for the motor
 	TypeDef_Speed speeds[] = {
 			{0.0, 0},
 			{0.25, 0},
@@ -375,6 +390,7 @@ int main(void)
 			{0.75, 0},
 			{1.0, 0}
 	};
+	//Size of the motor tab
 	size_t speeds_sz = sizeof(speeds) / sizeof(TypeDef_Speed);
   /* USER CODE END 1 */
 
@@ -399,6 +415,7 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
+  //Initialization of all state machine and all the animation with check
   init_fsm();
 
   if(init_chaser(TabLed, TabLed_sz) != CHASER_OK){
@@ -419,83 +436,118 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  //Change state if needed
 	  fsm_project();
 
+	  //Button 1 : set to previous animation
 	  if(btn1_irq_cnt){
+
 		  btn1_irq_cnt--;
+
+		  //In case of reaching beyond the first animation, set to the last animation
 		  target_animation = (target_animation > 0) ? target_animation - 1 : 3;
+
 		  user_input = USER_INPUT_OK;
+
 		  if (current_state == STATE_CHASER){
+			  //Kill the chaser if it is the current animation
 			  if (kill_chaser(&htim6) != CHASER_OK){
 				  Error_Handler();
 			  }
 			  tempo_selected = 2;
 		  }else if (current_state == STATE_BUZZER){
+			  //Kill the buzzer if it is the current animation
 			  if (kill_buzzer(&htim3) != BUZZER_OK){
 				  Error_Handler();
 			  }
 			  note_selected = 0;
 		  }else if(current_state == STATE_JUKEBOX){
+			  //Kill the jukebox if it is the current animation
 			  if(kill_jukebox(&htim3,&htim6) != JUKEBOX_OK){
 				  Error_Handler();
 			  }
 			  tempo_jukebox_selected = 3;
 		  }else if (current_state == STATE_CUSTOM){
+			  //Kill the motor if it is the current animation
 			  if (kill_motor(&htim3) != MOTOR_OK){
 				  Error_Handler();
 			  }
 			  speed_selected = 2;
 		  }
 	  }
+	  //Button 2 : set to next animation
 	  if(btn2_irq_cnt){
+
 		  btn2_irq_cnt--;
+
+		  //In case of reaching beyond the last animation, set to the first animation
 		  target_animation = (target_animation < 3) ? target_animation + 1 : 0;
 		  user_input = USER_INPUT_OK;
 		  if (current_state == STATE_CHASER){
+			  //Kill the chaser if it is the current animation
 			  if (kill_chaser(&htim6) != CHASER_OK){
 				  Error_Handler();
 			  }
 			  tempo_selected = 2;
 		  }else if (current_state == STATE_BUZZER){
+			  //Kill the buzzer if it is the current animation
 			  if (kill_buzzer(&htim3) != BUZZER_OK){
 				  Error_Handler();
 			  }
 			  note_selected = 0;
 		  } else if(current_state == STATE_JUKEBOX){
+			  //Kill the jukebox if it is the current animation
 			  if(kill_jukebox(&htim3,&htim6) != JUKEBOX_OK){
 				  Error_Handler();
 			  }
 			  tempo_jukebox_selected = 3;
 		  }else if (current_state == STATE_CUSTOM){
+			  //Kill the motor if it is the current animation
 			  if (kill_motor(&htim3) != MOTOR_OK){
 				  Error_Handler();
 			  }
 			  speed_selected = 2;
 		  }
 	  }
+	  //Button 3 : apply the "-" modifier to the current animation
 	  if(btn3_irq_cnt){
+
 		  btn3_irq_cnt--;
-		  //TO DO
+
 		  if (current_state == STATE_CHASER){
-			  tempo_selected = increase_tempo_chaser(tempo_selected, &htim6, tempos, tempo_sz);
-		  }else if (current_state == STATE_BUZZER){
+			  tempo_selected = decrease_tempo_chaser(tempo_selected, &htim6, tempos, tempo_sz);
+		  }
+
+		  else if (current_state == STATE_BUZZER){
 			  note_selected = previous_note(note_selected, &htim3);
-		  }else if (current_state == STATE_JUKEBOX){
+		  }
+
+		  else if (current_state == STATE_JUKEBOX){
 			  tempo_jukebox_selected = decrease_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox,tempo_jukebox_sz);
-		  }else if (current_state == STATE_CUSTOM){
+		  }
+
+		  else if (current_state == STATE_CUSTOM){
 			  speed_selected = speed_down(speed_selected, &htim3);
 		  }
 	  }
+	  //Button 4 : apply the "+" modifier to the current animation
 	  if(btn4_irq_cnt){
+
 		  btn4_irq_cnt--;
-		  //TO DO
+
 		  if (current_state == STATE_CHASER){
-			  tempo_selected = decrease_tempo_chaser(tempo_selected, &htim6, tempos);
-		  }else if (current_state == STATE_BUZZER){
+			  tempo_selected = increase_tempo_chaser(tempo_selected, &htim6, tempos);
+		  }
+
+		  else if (current_state == STATE_BUZZER){
 			  note_selected = next_note(note_selected, &htim3);
-		  }else if(current_state == STATE_JUKEBOX){
+		  }
+
+		  else if(current_state == STATE_JUKEBOX){
 			  tempo_jukebox_selected = increase_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox);
-		  }else if (current_state == STATE_CUSTOM){
+		  }
+
+		  else if (current_state == STATE_CUSTOM){
 			  speed_selected = speed_up(speed_selected, &htim3);
 		  }
 	  }
