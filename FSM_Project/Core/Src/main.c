@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
+#include "stdio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,19 +55,21 @@ volatile uint32_t btn4_irq_cnt;
 uint32_t tempos[] = { 10, 50, 100, 500, 1000 };
 size_t tempo_sz = sizeof(tempos) / sizeof(uint32_t);
 
-uint32_t tempos_jukebox[] = { 10, 50, 100, 150, 200,300 };
+uint32_t tempos_jukebox[] = {50, 100, 150, 200,300,350,400 };
 size_t tempo_jukebox_sz = sizeof(tempos_jukebox) / sizeof(uint32_t);
 
 int tempo_selected = 2;
 
-int tempo_jukebox_selected =1;
+int tempo_jukebox_selected =3;
 
 int note_selected = 0;
 
+int speed_selected = 2;
 
-char *jukebox_partition[] = { "G5", MUTE, "G5", MUTE, "G5", MUTE, "A5",
-	MUTE, "B5", "B5", "B5", "B5", "A5", "A5", "A5", "A5", "G5", MUTE, "B5",
-	MUTE, "A5", MUTE, "A5", MUTE, "G5", "G5", "G5", "G5", MUTE };
+char *jukebox_partition[] = {
+	    "A5", "B5", "C5", "A5", "E5", MUTE, "E5", "D5",MUTE,MUTE,
+	    "A5", "B5", "C5", "A5", "D5", MUTE, "D5", "C5","C5", MUTE,MUTE,MUTE,MUTE
+	};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -147,9 +149,9 @@ void state_buzzer(void){
 
 void state_jukebox(void){
 	if(execution_state == NOT_EXECUTED){
-		increase_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox, tempo_jukebox_sz);
+		increase_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox);
 		if (htim3.State == HAL_TIM_STATE_READY && htim6.State == HAL_TIM_STATE_READY){
-            if (start_music(&htim3, &htim6) != JUKEBOX_OK){
+            if (start_jukebox(&htim3, &htim6) != JUKEBOX_OK){
                 Error_Handler();
             }
         }
@@ -159,7 +161,11 @@ void state_jukebox(void){
 
 void state_custom(void){
 	if(execution_state == NOT_EXECUTED){
-
+		if (htim3.State == HAL_TIM_STATE_READY){
+			if (execute_motor(&htim3, speed_selected) == MOTOR_ERROR){
+				Error_Handler();
+			}
+		}
 	}
 }
 
@@ -323,23 +329,53 @@ int main(void)
 
 
 	TypeDef_Note notes[] = {
-			{"C5", 1046.50, 0},
-			{"C#5", 1108.73, 0},
-			{"D5", 1174.66, 0},
-			{"Eb5", 1244.51, 0},
-			{"E5", 1318.51, 0},
-			{"F5", 1396.91, 0},
-			{"F#5", 1479.98, 0},
-			{"G5", 1567.98, 0},
-			{"G#5", 1661.22, 0},
-			{"A5", 1760.00, 0},
-			{"A#5", 1864.66, 0},
-			{"B5", 1975.53, 0}
+			{ "F#4", 369.99, 0 },
+			{ "G4", 392.00, 0 },
+			{ "G#4", 415.30, 0 },
+			{ "A4", 440.00, 0 },
+			{ "A#4", 466.16, 0 },
+			{ "B4", 493.88, 0 },
+
+			{ "C5", 523.25, 0 },
+			{ "C#5", 554.37, 0 },
+			{ "D5", 587.33, 0 },
+			{ "Eb5", 622.25, 0 },
+			{ "E5", 659.25, 0 },
+			{ "F5", 698.46, 0 },
+			{ "F#5", 739.99, 0 },
+			{ "G5", 783.99, 0 },
+			{ "G#5", 830.61, 0 },
+			{ "A5", 880.00, 0 },
+			{ "A#5", 932.33, 0 },
+			{ "B5", 987.77, 0 },
+
+			{ "C6", 1046.50, 0 },
+			{ "C#6", 1108.73, 0 },
+			{ "D6", 1174.66, 0 },
+			{ "Eb6", 1244.51, 0 },
+			{ "E6", 1318.51, 0 },
+			{ "F6", 1396.91, 0 },
+			{ "F#6", 1479.98, 0 },
+			{ "G6", 1567.98, 0 },
+			{ "G#6", 1661.22, 0 },
+			{ "A6", 1760.00, 0 },
+			{ "A#6", 1864.66, 0 },
+			{ "B6", 1975.53, 0 }
+
 	};
 
 
 	size_t jukebox_partition_sz = sizeof(jukebox_partition)/ sizeof(char*);
 	size_t notes_sz = sizeof(notes) / sizeof(TypeDef_Note);
+
+	TypeDef_Speed speeds[] = {
+			{0.0, 0},
+			{0.25, 0},
+			{0.5, 0},
+			{0.75, 0},
+			{1.0, 0}
+	};
+	size_t speeds_sz = sizeof(speeds) / sizeof(TypeDef_Speed);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -374,6 +410,9 @@ int main(void)
   if(init_jukebox(notes, notes_sz, jukebox_partition_sz) != JUKEBOX_OK){
 	  Error_Handler();
   }
+  if(init_motor(speeds, speeds_sz, &htim3) != MOTOR_OK){
+    	  Error_Handler();
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -384,38 +423,54 @@ int main(void)
 
 	  if(btn1_irq_cnt){
 		  btn1_irq_cnt--;
-		  target_animation = (target_animation < 3) ? target_animation + 1 : 0;
-		  user_input = USER_INPUT_OK;
-		  if (current_state == STATE_CHASER){
-			  if (kill_chaser(&htim6) != CHASER_OK){
-				  Error_Handler();
-			  }
-		  }else if (current_state == STATE_BUZZER){
-			  if (kill_buzzer(&htim3) != BUZZER_OK){
-				  Error_Handler();
-			  }
-		  } else if(current_state == STATE_JUKEBOX){
-			  if(stop_music(&htim3) != JUKEBOX_OK){
-				  Error_Handler();
-			  }
-		  }
-	  }
-	  if(btn2_irq_cnt){
-		  btn2_irq_cnt--;
 		  target_animation = (target_animation > 0) ? target_animation - 1 : 3;
 		  user_input = USER_INPUT_OK;
 		  if (current_state == STATE_CHASER){
 			  if (kill_chaser(&htim6) != CHASER_OK){
 				  Error_Handler();
 			  }
+			  tempo_selected = 2;
 		  }else if (current_state == STATE_BUZZER){
 			  if (kill_buzzer(&htim3) != BUZZER_OK){
 				  Error_Handler();
 			  }
-		  } else if(current_state == STATE_JUKEBOX){
-			  if(stop_music(&htim3) != JUKEBOX_OK){
+			  note_selected = 0;
+		  }else if(current_state == STATE_JUKEBOX){
+			  if(kill_jukebox(&htim3,&htim6) != JUKEBOX_OK){
 				  Error_Handler();
 			  }
+			  tempo_jukebox_selected = 3;
+		  }else if (current_state == STATE_CUSTOM){
+			  if (kill_motor(&htim3) != MOTOR_OK){
+				  Error_Handler();
+			  }
+			  speed_selected = 2;
+		  }
+	  }
+	  if(btn2_irq_cnt){
+		  btn2_irq_cnt--;
+		  target_animation = (target_animation < 3) ? target_animation + 1 : 0;
+		  user_input = USER_INPUT_OK;
+		  if (current_state == STATE_CHASER){
+			  if (kill_chaser(&htim6) != CHASER_OK){
+				  Error_Handler();
+			  }
+			  tempo_selected = 2;
+		  }else if (current_state == STATE_BUZZER){
+			  if (kill_buzzer(&htim3) != BUZZER_OK){
+				  Error_Handler();
+			  }
+			  note_selected = 0;
+		  } else if(current_state == STATE_JUKEBOX){
+			  if(kill_jukebox(&htim3,&htim6) != JUKEBOX_OK){
+				  Error_Handler();
+			  }
+			  tempo_jukebox_selected = 3;
+		  }else if (current_state == STATE_CUSTOM){
+			  if (kill_motor(&htim3) != MOTOR_OK){
+				  Error_Handler();
+			  }
+			  speed_selected = 2;
 		  }
 	  }
 	  if(btn3_irq_cnt){
@@ -424,9 +479,11 @@ int main(void)
 		  if (current_state == STATE_CHASER){
 			  tempo_selected = increase_tempo_chaser(tempo_selected, &htim6, tempos, tempo_sz);
 		  }else if (current_state == STATE_BUZZER){
-			  note_selected = next_note(note_selected, &htim3);
-		  } else if (current_state == STATE_JUKEBOX){
-			  tempo_jukebox_selected = increase_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox, tempo_jukebox_sz);
+			  note_selected = previous_note(note_selected, &htim3);
+		  }else if (current_state == STATE_JUKEBOX){
+			  tempo_jukebox_selected = decrease_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox,tempo_jukebox_sz);
+		  }else if (current_state == STATE_CUSTOM){
+			  speed_selected = speed_down(speed_selected, &htim3);
 		  }
 	  }
 	  if(btn4_irq_cnt){
@@ -435,9 +492,11 @@ int main(void)
 		  if (current_state == STATE_CHASER){
 			  tempo_selected = decrease_tempo_chaser(tempo_selected, &htim6, tempos);
 		  }else if (current_state == STATE_BUZZER){
-			  note_selected = previous_note(note_selected, &htim3);
-		  } else if(current_state == STATE_JUKEBOX){
-			  tempo_jukebox_selected = decrease_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox);
+			  note_selected = next_note(note_selected, &htim3);
+		  }else if(current_state == STATE_JUKEBOX){
+			  tempo_jukebox_selected = increase_tempo_jukebox(tempo_jukebox_selected, &htim6, tempos_jukebox);
+		  }else if (current_state == STATE_CUSTOM){
+			  speed_selected = speed_up(speed_selected, &htim3);
 		  }
 	  }
     /* USER CODE END WHILE */
@@ -525,9 +584,14 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 4800;
+  sConfigOC.Pulse = 65535;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.Pulse = 4800;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();

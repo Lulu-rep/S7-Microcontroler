@@ -74,6 +74,8 @@ Chaser_status kill_chaser(TIM_HandleTypeDef* _htim6){
 	if (HAL_TIM_Base_Stop_IT(_htim6) != HAL_OK) {
 		return CHASER_ERROR;
 	}
+	__HAL_TIM_SET_AUTORELOAD(_htim6, 100);
+	__HAL_TIM_SET_COUNTER(_htim6, 0);
 
 	for(int i = 0; i< leds_sz; i++){
 		HAL_GPIO_WritePin(pLeds[i].Port, pLeds[i].Pin, GPIO_PIN_RESET);
